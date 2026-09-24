@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gaming Dashboard</title>
+<style>
+:root{--bg:#0b1020;--panel:#121a2f;--panel2:#18223b;--text:#eef3ff;--muted:#9eabc5;--accent:#7c5cff;--border:#273452;--good:#35d07f;--bad:#ff667d}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(135deg,#0b1020,#111a31);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+.wrap{max-width:1100px;margin:auto;padding:28px 18px 50px}.top{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:22px}.title{font-size:32px;font-weight:800}.sub{color:var(--muted);margin-top:5px}
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{background:var(--panel);border:1px solid var(--border);border-radius:16px;padding:18px}.label{color:var(--muted);font-size:13px}.value{font-size:28px;font-weight:800;margin-top:6px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0}.tab{border:1px solid var(--border);background:var(--panel);color:var(--text);padding:11px 15px;border-radius:10px;cursor:pointer}.tab.active{background:var(--accent);border-color:var(--accent)}
+section{display:none}.active-section{display:block}.cols{display:grid;grid-template-columns:1.15fr .85fr;gap:16px}
+h2{margin:0 0 15px;font-size:20px}input,select{width:100%;padding:11px 12px;border-radius:9px;border:1px solid var(--border);background:#0d1528;color:var(--text);font:inherit;margin-top:6px}label{display:block;margin:11px 0;color:var(--muted);font-size:14px}
+button.primary{background:var(--accent);border:0;color:white;padding:12px 16px;border-radius:9px;font-weight:700;cursor:pointer;margin-top:8px}
+button.danger{background:transparent;color:var(--bad);border:1px solid #633344;padding:8px 10px;border-radius:8px;cursor:pointer}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border)}.row:last-child{border-bottom:0}
+.game{font-weight:700}.muted{color:var(--muted);font-size:13px}.pill{padding:4px 8px;border-radius:999px;background:var(--panel2);font-size:12px}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}.month{font-weight:800;font-size:18px}.days{display:grid;grid-template-columns:repeat(7,1fr);gap:6px}.dow{color:var(--muted);font-size:12px;text-align:center;padding:6px}.day{min-height:76px;background:#0d1528;border:1px solid var(--border);border-radius:9px;padding:7px;cursor:pointer}.day:hover{border-color:#58678c}.day.today{outline:2px solid var(--accent)}.day.selected{background:#211d4b}.num{font-weight:700}.event{margin-top:7px;font-size:11px;color:#d9d1ff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.empty{color:var(--muted);padding:14px 0}.stats-table{width:100%;border-collapse:collapse}.stats-table th,.stats-table td{text-align:left;padding:10px;border-bottom:1px solid var(--border)}.stats-table th{color:var(--muted);font-size:12px}
+@media(max-width:800px){.grid{grid-template-columns:repeat(2,1fr)}.cols{grid-template-columns:1fr}}@media(max-width:480px){.grid{grid-template-columns:1fr 1fr}.title{font-size:25px}.day{min-height:62px;padding:5px}.event{display:none}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div class="top"><div><div class="title">🎮 Gaming Dashboard</div><div class="sub">Deine Spiele, Statistiken und dein Gaming-Kalender.</div></div></div>
+
+  <div class="grid">
+    <div class="card"><div class="label">Spiele</div><div class="value" id="gamesCount">0</div></div>
+    <div class="card"><div class="label">Matches</div><div class="value" id="matches">0</div></div>
+    <div class="card"><div class="label">Siege</div><div class="value" id="wins">0</div></div>
+    <div class="card"><div class="label">K/D</div><div class="value" id="kd">0.00</div></div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="dashboard">Übersicht</button>
+    <button class="tab" data-tab="calendar">📅 Kalender</button>
+    <button class="tab" data-tab="stats">📊 Statistiken</button>
+    <button class="tab" data-tab="games">🎮 Spiele</button>
+  </div>
+
+  <section id="dashboard" class="active-section">
+    <div class="cols">
+      <div class="card"><h2>Letzte Einträge</h2><div id="recent"></div></div>
+      <div class="card"><h2>Spiele</h2><div id="gameList"></div></div>
+    </div>
+  </section>
+
+  <section id="calendar">
+    <div class="card">
+      <div class="calendar-head"><button class="tab" id="prev">←</button><div class="month" id="month"></div><button class="tab" id="next">→</button></div>
+      <div class="days" id="calendarGrid"></div>
+      <div class="muted" style="margin-top:12px">Klicke auf einen Tag, um eine Gaming-Session einzutragen.</div>
+    </div>
+    <div class="card" style="margin-top:16px"><h2>Session eintragen</h2>
+      <form id="sessionForm">
+        <label>Datum<input id="sessionDate" type="date" required></label>
+        <label>Spiel<select id="sessionGame" required></select></label>
+        <label>Notiz<input id="sessionNote" maxlength="80" placeholder="z. B. Ranked Abend"></label>
+        <button class="primary">Session speichern</button>
+      </form>
+    </div>
+  </section>
+
+  <section id="stats">
+    <div class="cols">
+      <div class="card"><h2>Statistik eintragen</h2>
+        <form id="statForm">
+          <label>Datum<input id="statDate" type="date" required></label>
+          <label>Spiel<select id="statGame" required></select></label>
+          <label>Matches<input id="statMatches" type="number" min="1" max="10000" value="1" required></label>
+          <label>Siege<input id="statWins" type="number" min="0" max="10000" value="0" required></label>
+          <label>Kills<input id="statKills" type="number" min="0" max="100000" value="0" required></label>
+          <label>Deaths<input id="statDeaths" type="number" min="0" max="100000" value="0" required></label>
+          <button class="primary">Statistik speichern</button>
+        </form>
+      </div>
+      <div class="card"><h2>Einträge</h2><div id="statList"></div></div>
+    </div>
+  </section>
+
+  <section id="games">
+    <div class="cols">
+      <div class="card"><h2>Neues Spiel</h2>
+        <form id="gameForm"><label>Name<input id="gameName" maxlength="40" placeholder="z. B. Fortnite" required></label><button class="primary">Spiel hinzufügen</button></form>
+      </div>
+      <div class="card"><h2>Meine Spiele</h2><div id="gamesPanel"></div></div>
+    </div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $=id=>document.getElementById(id);
+  const key="gamingDashboardData";
+  let data={games:["Fortnite"],stats:[],sessions:[]};
+  try{const saved=JSON.parse(localStorage.getItem(key));if(saved)data={...data,...saved}}catch(e){}
+  let view=new Date(); let selected=new Date();
+
+  function save(){try{localStorage.setItem(key,JSON.stringify(data))}catch(e){}}
+  function iso(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
+  function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+  function fillSelects(){
+    [$("statGame"),$("sessionGame")].forEach(sel=>{sel.innerHTML=data.games.map(g=>`<option>${esc(g)}</option>`).join("")});
+  }
+  function renderSummary(){
+    $("gamesCount").textContent=data.games.length;
+    const m=data.stats.reduce((a,x)=>a+x.matches,0), w=data.stats.reduce((a,x)=>a+x.wins,0);
+    const k=data.stats.reduce((a,x)=>a+x.kills,0), d=data.stats.reduce((a,x)=>a+x.deaths,0);
+    $("matches").textContent=m;$("wins").textContent=w;$("kd").textContent=(d?k/d:k).toFixed(2);
+    $("recent").innerHTML=data.stats.length?data.stats.slice().reverse().slice(0,8).map(x=>`<div class="row"><div><div class="game">${esc(x.game)}</div><div class="muted">${x.date} · ${x.matches} Matches</div></div><div><span class="pill">${x.wins} Siege</span> <span class="pill">${x.deaths? (x.kills/x.deaths).toFixed(2):x.kills.toFixed(2)} K/D</span></div></div>`).join(""):"<div class='empty'>Noch keine Statistiken.</div>";
+    $("gameList").innerHTML=data.games.map(g=>{const a=data.stats.filter(x=>x.game===g);const mm=a.reduce((s,x)=>s+x.matches,0);return `<div class="row"><div class="game">${esc(g)}</div><div class="muted">${mm} Matches</div></div>`}).join("")||"<div class='empty'>Noch keine Spiele.</div>";
+  }
+  function renderStats(){
+    $("statList").innerHTML=data.stats.length?data.stats.slice().reverse().map((x,i)=>`<div class="row"><div><div class="game">${esc(x.game)}</div><div class="muted">${x.date} · ${x.matches} Matches · ${x.kills}/${x.deaths} K/D</div></div><button class="danger" data-del-stat="${data.stats.length-1-i}">Löschen</button></div>`).join(""):"<div class='empty'>Noch keine Einträge.</div>";
+  }
+  function renderGames(){
+    $("gamesPanel").innerHTML=data.games.map((g,i)=>`<div class="row"><div class="game">${esc(g)}</div><button class="danger" data-del-game="${i}" ${data.games.length===1?"disabled":""}>Löschen</button></div>`).join("");
+  }
+  function renderCalendar(){
+    const y=view.getFullYear(),m=view.getMonth();$("month").textContent=new Intl.DateTimeFormat("de-DE",{month:"long",year:"numeric"}).format(view);
+    const first=new Date(y,m,1), start=(first.getDay()+6)%7, days=new Date(y,m+1,0).getDate(), prevDays=new Date(y,m,0).getDate();
+    const names=["Mo","Di","Mi","Do","Fr","Sa","So"];let h=names.map(n=>`<div class="dow">${n}</div>`).join("");
+    for(let i=0;i<42;i++){let day=i-start+1, d=new Date(y,m,day), inMonth=day>=1&&day<=days;let date=iso(d);let ev=data.sessions.filter(s=>s.date===date);
+      if(!inMonth) h+=`<div class="day" style="opacity:.35"><div class="num">${d.getDate()}</div></div>`;
+      else h+=`<button class="day ${date===iso(new Date())?"today":""} ${date===iso(selected)?"selected":""}" data-date="${date}"><div class="num">${d.getDate()}</div>${ev.slice(0,2).map(e=>`<div class="event">${esc(e.game)}${e.note?" · "+esc(e.note):""}</div>`).join("")}</button>`;
+    }
+    $("calendarGrid").innerHTML=h;
+  }
+  document.querySelectorAll(".tab[data-tab]").forEach(b=>b.addEventListener("click",()=>{document.querySelectorAll(".tab[data-tab]").forEach(x=>x.classList.remove("active"));document.querySelectorAll("section").forEach(x=>x.classList.remove("active-section"));b.classList.add("active");$(b.dataset.tab).classList.add("active-section")}));
+  $("gameForm").addEventListener("submit",e=>{e.preventDefault();let n=$("gameName").value.trim();if(!n)return;if(!data.games.includes(n))data.games.push(n);$("gameName").value="";save();renderAll()});
+  $("statForm").addEventListener("submit",e=>{e.preventDefault();let x={date:$("statDate").value,game:$("statGame").value,matches:+$("statMatches").value,wins:+$("statWins").value,kills:+$("statKills").value,deaths:+$("statDeaths").value};if(x.wins>x.matches){alert("Siege dürfen nicht höher als Matches sein.");return}data.stats.push(x);save();renderAll();e.target.reset();$("statDate").value=iso(new Date())});
+  $("sessionForm").addEventListener("submit",e=>{e.preventDefault();data.sessions.push({date:$("sessionDate").value,game:$("sessionGame").value,note:$("sessionNote").value.trim()});save();renderAll();e.target.reset();$("sessionDate").value=iso(selected)});
+  $("calendarGrid").addEventListener("click",e=>{const b=e.target.closest("[data-date]");if(!b)return;selected=new Date(b.dataset.date+"T12:00:00");$("sessionDate").value=b.dataset.date;renderCalendar()});
+  $("prev").addEventListener("click",()=>{view.setMonth(view.getMonth()-1);renderCalendar()});$("next").addEventListener("click",()=>{view.setMonth(view.getMonth()+1);renderCalendar()});
+  $("statList").addEventListener("click",e=>{const b=e.target.closest("[data-del-stat]");if(b){data.stats.splice(+b.dataset.delStat,1);save();renderAll()}});
+  $("gamesPanel").addEventListener("click",e=>{const b=e.target.closest("[data-del-game]");if(b&&data.games.length>1){data.games.splice(+b.dataset.delGame,1);data.stats=data.stats.filter(x=>data.games.includes(x.game));data.sessions=data.sessions.filter(x=>data.games.includes(x.game));save();renderAll()}});
+  function renderAll(){fillSelects();renderSummary();renderStats();renderGames();renderCalendar()}
+  $("statDate").value=iso(new Date());$("sessionDate").value=iso(new Date());renderAll();
+})();
+</script>
+</body>
+</html>
